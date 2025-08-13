@@ -2,6 +2,8 @@ import esbuild from "esbuild";
 import { GasPlugin } from "esbuild-gas-plugin";
 import dotenv from "dotenv";
 
+dotenv.config();
+
 esbuild
   .build({
     entryPoints: ["./src/main.ts"],
@@ -10,9 +12,6 @@ esbuild
     outfile: "./dist/main.js",
     plugins: [GasPlugin],
     define: {
-      "process.env.DISCORD_WEBHOOK_URL": JSON.stringify(
-        process.env.DISCORD_WEBHOOK_URL
-      ),
       "process.env.DISCORD_BOT_TOKEN": JSON.stringify(
         process.env.DISCORD_BOT_TOKEN
       ),
