@@ -12,12 +12,10 @@ esbuild
     outfile: "./dist/main.js",
     plugins: [GasPlugin],
     define: {
-      "process.env.DISCORD_BOT_TOKEN": JSON.stringify(
-        process.env.DISCORD_BOT_TOKEN
+      "process.env.AWS_API_GATEWAY_URL": JSON.stringify(
+        process.env.AWS_API_GATEWAY_URL
       ),
-      "process.env.DISCORD_CHANNEL_ID": JSON.stringify(
-        process.env.DISCORD_CHANNEL_ID
-      ),
+      "process.env.AWS_API_KEY": JSON.stringify(process.env.AWS_API_KEY),
     },
   })
   .catch((error) => {

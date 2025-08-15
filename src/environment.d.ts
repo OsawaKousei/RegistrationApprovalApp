@@ -1,6 +1,6 @@
 declare namespace NodeJS {
   interface ProcessEnv {
-    readonly DISCORD_BOT_TOKEN: string;
-    readonly DISCORD_CHANNEL_ID: string;
+    readonly AWS_API_GATEWAY_URL: string;
+    readonly AWS_API_KEY: string;
   }
 }
