@@ -18,8 +18,6 @@ export const App = (e: GoogleAppsScript.Events.SheetsOnEdit) => {
     range.getColumn() !== APPROVAL_COLUMN ||
     range.getValue() !== true
   ) {
-    console.log(`シート名: ${sheet.getName()}, 列番号: ${range.getColumn()}`);
-    console.log("処理をスキップしました。");
     return;
   }
 
@@ -61,23 +59,49 @@ export const App = (e: GoogleAppsScript.Events.SheetsOnEdit) => {
  * Discordの招待リンクを生成する (1回限り/7日間有効)
  */
 function createDiscordInvite(): string | null {
-  const url = `https://discord.com/api/v10/channels/${DISCORD_CHANNEL_ID}/invites`;
-  const payload = { max_age: 604800, max_uses: 1, unique: true };
-  const options: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
-    method: "post",
-    contentType: "application/json",
-    headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` },
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true,
-  };
+  try {
+    const url = `https://discord.com/api/v10/channels/${DISCORD_CHANNEL_ID}/invites`;
+    const payload = { max_age: 604800, max_uses: 1, unique: true };
+    const options: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
+      method: "post",
+      contentType: "application/json",
+      headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` },
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true, // エラー時もレスポンスを取得するためにtrueに設定
+    };
+    console.log(
+      `url ${url} : payload ${JSON.stringify(
+        payload
+      )} : options ${JSON.stringify(options)}`
+    );
 
-  const response = UrlFetchApp.fetch(url, options);
-  const result = JSON.parse(response.getContentText());
+    const response = UrlFetchApp.fetch(url, options);
+    const responseCode = response.getResponseCode();
 
-  if (response.getResponseCode() === 200) {
+    console.log(`response ${response.getContentText()}`);
+
+    if (responseCode !== 200) {
+      console.error(
+        `Discord API呼び出しに失敗しました。ステータスコード: ${responseCode}`
+      );
+      console.error(`レスポンス内容: ${response.getContentText()}`);
+      return null;
+    }
+
+    const result = JSON.parse(response.getContentText());
+    console.log("Discord招待リンクの作成に成功しました。");
     return `https://discord.gg/${result.code}`;
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "不明なエラーが発生しました。";
+    console.error(
+      `Discord招待リンクの作成中にエラーが発生しました: ${errorMessage}`
+    );
+    if (error instanceof Error && error.stack) {
+      console.error(`スタックトレース: ${error.stack}`);
+    }
+    return null;
   }
-  return null;
 }
 
 /**
@@ -88,7 +112,19 @@ function sendInvitationMail(
   mailAddress: string,
   inviteLink: string
 ): void {
-  const subject = "【KUPAC】サーバー参加のご招待";
-  const body = `${name}様\n\nこの度は、KUPACへのご参加を申請いただき、誠にありがとうございます。\n無事、参加が承認されましたことをご連絡いたします。\n\nつきましては、下記Discordサーバーの招待リンクより、コミュニティへご参加ください。\nこのリンクは7日間有効で、1度のみ利用可能です。\n\n▼招待リンク\n${inviteLink}\n\n私たちのDiscordサーバーでお話できることを楽しみにしております。\n\nKUPAC\n運営一同`;
-  GmailApp.sendEmail(mailAddress, subject, body);
+  try {
+    const subject = "【KUPAC】サーバー参加のご招待";
+    const body = `${name}様\n\nこの度は、KUPACへのご参加を申請いただき、誠にありがとうございます。\n無事、参加が承認されましたことをご連絡いたします。\n\nつきましては、下記Discordサーバーの招待リンクより、コミュニティへご参加ください。\nこのリンクは7日間有効で、1度のみ利用可能です。\n\n▼招待リンク\n${inviteLink}\n\n私たちのDiscordサーバーでお話できることを楽しみにしております。\n\nKUPAC\n運営一同`;
+    GmailApp.sendEmail(mailAddress, subject, body);
+    console.log(`招待メールの送信に成功しました。送信先: ${mailAddress}`);
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "不明なエラーが発生しました。";
+    console.error(`招待メールの送信中にエラーが発生しました: ${errorMessage}`);
+    console.error(`送信先メールアドレス: ${mailAddress}`);
+    if (error instanceof Error && error.stack) {
+      console.error(`スタックトレース: ${error.stack}`);
+    }
+    throw error; // メイン処理でエラーを捕捉するために再スロー
+  }
 }
