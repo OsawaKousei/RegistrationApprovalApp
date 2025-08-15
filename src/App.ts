@@ -5,8 +5,8 @@ const APPROVAL_COLUMN = 8; // 承認チェックボックスの列番号
 const STATUS_COLUMN = 7; // 処理ステータスを書き込む列番号
 
 // --- .envから読み込む秘密情報 ---
-const DISCORD_BOT_TOKEN: string = process.env.DISCORD_BOT_TOKEN || "";
-const DISCORD_CHANNEL_ID: string = process.env.DISCORD_CHANNEL_ID || "";
+const AWS_API_GATEWAY_URL: string = process.env.AWS_API_GATEWAY_URL || "";
+const AWS_API_KEY: string = process.env.AWS_API_KEY || "";
 
 export const App = (e: GoogleAppsScript.Events.SheetsOnEdit) => {
   const range = e.range;
@@ -56,33 +56,28 @@ export const App = (e: GoogleAppsScript.Events.SheetsOnEdit) => {
 };
 
 /**
- * Discordの招待リンクを生成する (1回限り/7日間有効)
+ * Discordの招待リンクを生成する (AWS API Gateway + Lambda経由)
  */
 function createDiscordInvite(): string | null {
   try {
-    const url = `https://discord.com/api/v10/channels/${DISCORD_CHANNEL_ID}/invites`;
-    const payload = { max_age: 604800, max_uses: 1, unique: true };
     const options: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
-      method: "post",
-      contentType: "application/json",
-      headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` },
-      payload: JSON.stringify(payload),
-      muteHttpExceptions: true, // エラー時もレスポンスを取得するためにtrueに設定
+      method: "get",
+      headers: {
+        "x-api-key": AWS_API_KEY,
+      },
+      muteHttpExceptions: true,
     };
-    console.log(
-      `url ${url} : payload ${JSON.stringify(
-        payload
-      )} : options ${JSON.stringify(options)}`
-    );
 
-    const response = UrlFetchApp.fetch(url, options);
+    console.log(`AWS API Gateway URL: ${AWS_API_GATEWAY_URL}`);
+
+    const response = UrlFetchApp.fetch(AWS_API_GATEWAY_URL, options);
     const responseCode = response.getResponseCode();
 
     console.log(`response ${response.getContentText()}`);
 
     if (responseCode !== 200) {
       console.error(
-        `Discord API呼び出しに失敗しました。ステータスコード: ${responseCode}`
+        `AWS API Gateway呼び出しに失敗しました。ステータスコード: ${responseCode}`
       );
       console.error(`レスポンス内容: ${response.getContentText()}`);
       return null;
@@ -90,7 +85,7 @@ function createDiscordInvite(): string | null {
 
     const result = JSON.parse(response.getContentText());
     console.log("Discord招待リンクの作成に成功しました。");
-    return `https://discord.gg/${result.code}`;
+    return result.inviteLink || result.invite_link;
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "不明なエラーが発生しました。";
