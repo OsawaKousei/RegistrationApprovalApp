@@ -1,8 +1,8 @@
 const SHEET_NAME = "フォームの回答 1"; // 対象のシート名
 const NAME_COLUMN = 3; // 申請者名の列番号
 const EMAIL_COLUMN = 2; // メールアドレスの列番号
-const APPROVAL_COLUMN = 8; // 承認チェックボックスの列番号
-const STATUS_COLUMN = 7; // 処理ステータスを書き込む列番号
+const APPROVAL_COLUMN = 9; // 承認チェックボックスの列番号
+const STATUS_COLUMN = 8; // 処理ステータスを書き込む列番号
 
 // --- .envから読み込む秘密情報 ---
 const AWS_API_GATEWAY_URL: string = process.env.AWS_API_GATEWAY_URL || "";
